@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura AI — Студия генерации для кулинаров</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ivory: '#FFFFF0',
+            brandRed: '#E53E3E',
+            brandLime: '#32CD32',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-ivory text-gray-800 font-sans min-h-screen flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="w-full py-4 px-8 bg-white shadow-sm flex justify-between items-center">
+    <div class="text-2xl font-bold text-brandRed flex items-center gap-2">
+      <i class="fa-solid fa-utensils"></i> Aura AI
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="bg-gray-100 px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2">
+        <i class="fa-solid fa-coins text-yellow-500"></i> Баланс: <span id="credit-count">10</span> кредитов
+      </div>
+      <button class="bg-brandRed text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition">
+        Купить кредиты
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Hero Content -->
+  <main class="max-w-4xl mx-auto px-4 py-12 text-center flex-grow flex flex-col justify-center items-center">
+    <span class="bg-brandLime/20 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">
+      Платформа для Food-блогеров
+    </span>
+    <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+      Создавайте сочные кулинарные фото и видео за секунды
+    </h1>
+    <p class="text-lg text-gray-600 mb-8 max-w-2xl">
+      Генерируйте профессиональные фуд-фотографии, рецепты и контент для соцсетей с помощью продвинутого искусственного интеллекта.
+    </p>
+
+    <!-- Generator Box -->
+    <div class="w-full bg-white p-6 rounded-2xl shadow-xl border border-gray-100 mb-8">
+      <textarea class="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brandRed focus:outline-none resize-none mb-4" rows="3" placeholder="Опишите блюдо (например: Сейшуанская ушка с хрустящей корочкой и зеленью)..."></textarea>
+      <div class="flex justify-between items-center">
+        <span class="text-xs text-gray-400">Стоимость генерации: 1 кредит</span>
+        <button class="bg-brandLime text-gray-900 font-bold px-6 py-3 rounded-xl hover:bg-lime-400 transition flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Сгенерировать
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full py-6 text-center text-sm text-gray-500 border-t border-gray-200">
+    © 2026 Aura AI Studio. Все права защищены.
+  </footer>
+
+</body>
+</html>
