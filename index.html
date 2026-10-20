@@ -48,7 +48,7 @@
   <div class="modal" id="modal"><div class="modal-backdrop" id="backdrop"></div><div class="modal-card"><div class="preview" id="modalPreview"><button class="close" id="closeModal">×</button><div class="preview-label">Превью тренда</div></div><div class="modal-info"><span class="badge" id="modalBadge">ХИТ</span><h2 id="modalTitle"></h2><p id="modalDescription"></p><ul class="features"><li>Естественное освещение и реалистичная текстура</li><li>Сохранение черт и мимики лица</li><li>Готовый контент для Reels и Stories</li></ul><div class="result" id="result"><img id="resultImage" alt="Результат Face Swap" /><div class="result-caption">✓ Готово — лицо успешно интегрировано в образ</div></div><div class="progress" id="progress"><i></i></div><button class="primary" id="generateBtn">Повторить с моим лицом <span>✦</span></button></div></div></div><div class="toast" id="toast"></div>
   <script>
     const API_ENDPOINT = '/api/faceswap';
-    const trends = [
+    let trends = [
       {title:'Birthday Cake Girl',filter:'День рождения',tag:'ХИТ',desc:'Максималистичный birthday-сет с кремовым тортом, свечами и мягким студийным светом.',img:'https://images.unsplash.com/photo-1558636508-e0db3814bd1d?auto=format&fit=crop&w=900&q=85'},
       {title:'Neon Dessert',filter:'Суперхит',tag:'ТОП',desc:'Неоновый фотосет в оттенках фуксии и лайма — для тех, кто любит быть в центре внимания.',img:'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=900&q=85'},
       {title:'Drift with a Cake',filter:'Мужские',tag:'ХИТ',desc:'Динамичный cinematic-кадр: скорость, спорткар и торт как главный герой твоего дня.',img:'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=900&q=85'},
@@ -67,7 +67,34 @@
     function loadPhoto(file){if(!file||!file.type.startsWith('image/'))return toast('Выберите изображение JPG, PNG или WEBP'); const reader=new FileReader();reader.onload=()=>{userPhoto=reader.result;localStorage.setItem('auraUserPhoto',userPhoto);$('#avatar').style.backgroundImage=`url('${userPhoto}')`;$('#avatar').style.backgroundSize='cover';$('#avatar').textContent='';$('#avatar').classList.add('loaded');$('#uploadStatus').textContent='✅ Лицо загружено!';$('#uploadStatus').classList.add('ok');toast('Фото сохранено в памяти браузера')};reader.readAsDataURL(file)}
     async function generate(){if(!selectedTrend)return;if(!userPhoto){toast('Сначала загрузите своё фото');$('#fileInput').click();return} const btn=$('#generateBtn'),bar=$('#progress'),fill=bar.querySelector('i');btn.disabled=true;btn.textContent='⏳ Генерация Face Swap 99% сходство...';bar.classList.add('show');fill.style.width='18%';let timer=setInterval(()=>{let current=parseFloat(fill.style.width);if(current<86)fill.style.width=(current+11)+'%'},700);try{const res=await fetch(API_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_image:userPhoto,target_image:selectedTrend.img,trend:selectedTrend.title})});if(!res.ok)throw new Error('API '+res.status);const data=await res.json();const image=data.output||data.image||data.url;if(!image)throw new Error('Пустой ответ API');$('#resultImage').src=image;fill.style.width='100%';$('#result').classList.add('show');btn.textContent='Создать ещё раз ✦';toast('Готово — Face Swap создан')}catch(e){console.error(e);toast('Не удалось подключиться к Face Swap API. Проверьте /api/faceswap на Vercel.');btn.disabled=false;btn.innerHTML='Повторить с моим лицом <span>✦</span>'}finally{clearInterval(timer);setTimeout(()=>bar.classList.remove('show'),800)}}
     $('#fileInput').addEventListener('change',e=>loadPhoto(e.target.files[0]));$('#heroUpload').addEventListener('click',()=>$('#fileInput').click());$('#generateBtn').addEventListener('click',generate);$('#closeModal').addEventListener('click',closeModal);$('#backdrop').addEventListener('click',closeModal);$('#randomBtn').addEventListener('click',()=>openModal(trends[Math.floor(Math.random()*trends.length)]));$('#pricingBtn').addEventListener('click',()=>toast('Тарифы Aura AI скоро будут доступны'));$('#loginBtn').addEventListener('click',()=>toast('Авторизация будет доступна в следующем обновлении'));document.querySelectorAll('.cat').forEach(b=>b.addEventListener('click',()=>{document.querySelector('.cat.active').classList.remove('active');b.classList.add('active');render(b.dataset.filter)}));document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));b.classList.add('active');toast(b.dataset.nav+' — раздел в разработке')}));
-    const saved=localStorage.getItem('auraUserPhoto');if(saved){userPhoto=saved;$('#avatar').style.backgroundImage=`url('${saved}')`;$('#avatar').style.backgroundSize='cover';$('#avatar').textContent='';$('#avatar').classList.add('loaded');$('#uploadStatus').textContent='✅ Лицо загружено!';$('#uploadStatus').classList.add('ok')}render();
+    async function loadRemoteTrends(){
+      try{
+        const response=await fetch('/api/trends',{headers:{'Accept':'application/json'}});
+        if(!response.ok)throw new Error('API '+response.status);
+        const payload=await response.json();
+        const remote=(payload.trends||[]).filter(item=>item.title && (item.preview_url||item.video_url));
+        if(remote.length){
+          trends=remote.map(item=>({
+            id:item.id,
+            title:item.title,
+            filter:item.category||'Кулинария',
+            tag:item.is_hot?'ХИТ':'NEW',
+            desc:item.description||'Готовый тренд Aura AI для создания контента.',
+            img:item.preview_url||item.video_url,
+            preset_id:item.preset_id,
+            video:item.video_url,
+            price:item.price
+          }));
+        }
+        render('Все тренды');
+      }catch(error){
+        console.warn('Remote trends unavailable; using local fallback.',error);
+        render('Все тренды');
+      }
+    }
+    const saved=localStorage.getItem('auraUserPhoto');if(saved){userPhoto=saved;$('#avatar').style.backgroundImage=`url('${saved}')`;$('#avatar').style.backgroundSize='cover';$('#avatar').textContent='';$('#avatar').classList.add('loaded');$('#uploadStatus').textContent='✅ Лицо загружено!';$('#uploadStatus').classList.add('ok')}
+    render('Все тренды');
+    loadRemoteTrends();
   </script>
 </body>
 </html>
