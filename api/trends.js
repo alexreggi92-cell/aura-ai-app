@@ -43,4 +43,4 @@ module.exports = async function handler(request, response) {
     console.error('GET /api/trends failed:', error);
     return response.status(500).json({ error: 'Unable to load trends' });
   }
-};
+}; 
