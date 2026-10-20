@@ -1,4 +1,4 @@
-export default async function handler(request, response) {
+module.exports = async function handler(request, response) {
   if (request.method !== 'GET') {
     return response.status(405).json({ error: 'Method not allowed' });
   }
@@ -7,7 +7,9 @@ export default async function handler(request, response) {
   const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return response.status(500).json({ error: 'Supabase environment variables are not configured' });
+    return response.status(500).json({
+      error: 'Supabase environment variables are not configured'
+    });
   }
 
   const query = new URLSearchParams({
@@ -17,7 +19,8 @@ export default async function handler(request, response) {
   });
 
   try {
-    const upstream = await fetch(`${supabaseUrl.replace(/\\/$/, '')}/rest/v1/trends?${query.toString()}`, {
+    const baseUrl = supabaseUrl.replace(/\/$/, '');
+    const upstream = await fetch(`${baseUrl}/rest/v1/trends?${query.toString()}`, {
       headers: {
         apikey: supabaseKey,
         Authorization: `Bearer ${supabaseKey}`,
@@ -27,14 +30,17 @@ export default async function handler(request, response) {
 
     const body = await upstream.text();
     if (!upstream.ok) {
-      return response.status(upstream.status).json({ error: 'Supabase request failed', details: body });
+      console.error('Supabase request failed:', upstream.status, body);
+      return response.status(upstream.status).json({
+        error: 'Supabase request failed'
+      });
     }
 
     const trends = JSON.parse(body);
     response.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     return response.status(200).json({ trends });
   } catch (error) {
-    console.error('GET /api/trends failed', error);
+    console.error('GET /api/trends failed:', error);
     return response.status(500).json({ error: 'Unable to load trends' });
   }
-}
+};
