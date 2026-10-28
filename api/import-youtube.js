@@ -1,9 +1,11 @@
 const SEARCH_QUERIES = [
-  { query: 'торты десерты выпечка', category: 'Кулинария' },
-  { query: 'украшение торта cake decorating', category: 'Торты' },
-  { query: 'шоколадный десерт chocolate dessert', category: 'Шоколад' },
-  { query: 'клубничный десерт strawberry dessert', category: 'Десерты' },
-  { query: 'день рождения торт birthday cake', category: 'День рождения' }
+  { query: 'viral AI birthday video trend short', category: 'День рождения' },
+  { query: 'AI birthday cake transformation short', category: 'Торт / День рождения' },
+  { query: 'AI dessert transformation viral short', category: 'Десертный AI' },
+  { query: 'AI cake fantasy video trend', category: 'Торт / Десерт' },
+  { query: 'AI luxury birthday party video short', category: 'Luxury Birthday' },
+  { query: 'AI gothic vampire birthday cake short', category: 'Gothic Birthday' },
+  { query: 'AI confectionery video trend short', category: 'Кондитерская эстетика' }
 ];
 
 function supabaseHeaders(key, extra = {}) {
@@ -48,8 +50,7 @@ async function searchYouTube(query, category, apiKey) {
     order: 'viewCount',
     maxResults: '10',
     publishedAfter,
-    relevanceLanguage: 'ru',
-    regionCode: 'RU',
+    videoDuration: 'short',
     key: apiKey
   });
   const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
@@ -123,14 +124,14 @@ module.exports = async function handler(request, response) {
         preview_url: item.previewUrl,
         video_url: item.videoUrl,
         preset_id: null,
-        provider: 'youtube',
+        provider: 'youtube_research',
         face_required: false,
         media_type: 'video',
         aspect_ratio: '16:9',
         duration_seconds: 0,
         price: 0,
         is_hot: views >= 100000 || likes >= 5000,
-        status: 'published',
+        status: 'draft',
         usage_count: views
       };
     });
