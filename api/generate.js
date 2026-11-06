@@ -1,6 +1,7 @@
 const HIGGSFIELD_KEY = 'HF_CREDENTIALS';
 const GENJUTSU_ENDPOINT = 'https://api.higgsfield.ai/higgsfield/genjutsu/motion-transfer/v1.0';
 const KLING_ENDPOINT = 'https://api.higgsfield.ai/kling-video/v3/motion-control/pro';
+const MARKETING_IMAGE_ENDPOINT = 'https://api.higgsfield.ai/marketing-studio/image';
 
 function jsonHeaders(key, extra = {}) {
   return {
@@ -60,16 +61,20 @@ async function callHiggsfield(model, input) {
       keep_original_sound: 'yes',
       character_orientation: 'image'
     };
-  } else if (model === 'image') {
-    if (!process.env.HF_IMAGE_ENDPOINT) {
-      const error = new Error('Image provider endpoint is not configured yet');
-      error.statusCode = 501;
+  } else if (model === 'image' || model === 'marketing-studio-image') {
+    if (!/^https:\/\//i.test(input.image_url || '')) {
+      const error = new Error('A public HTTPS image_url is required for identity image generation');
+      error.statusCode = 400;
       throw error;
     }
-    endpoint = process.env.HF_IMAGE_ENDPOINT;
+    endpoint = MARKETING_IMAGE_ENDPOINT;
     body = {
       prompt: input.prompt || '',
-      image_urls: [input.image_url]
+      image_urls: [input.image_url],
+      quality: 'medium',
+      resolution: '1k',
+      aspect_ratio: input.aspect_ratio || '9:16',
+      enhance_prompt: false
     };
   } else {
     const error = new Error(`Unsupported model_id: ${model}`);
@@ -111,9 +116,7 @@ module.exports = async function handler(request, response) {
 
   const presetId = typeof body.preset_id === 'string' ? body.preset_id.trim() : '';
   const imageUrl = typeof body.image_url === 'string' ? body.image_url.trim() : '';
-  if (!presetId || !/^https:\/\//i.test(imageUrl)) {
-    return response.status(400).json({ ok: false, error: 'preset_id and a public HTTPS image_url are required' });
-  }
+  if (!presetId) return response.status(400).json({ ok: false, error: 'preset_id is required' });
 
   let generationId = null;
   try {
@@ -122,6 +125,9 @@ module.exports = async function handler(request, response) {
     const trends = await trendResponse.json();
     const trend = trends[0];
     if (!trend) return response.status(404).json({ ok: false, error: 'Preset not found or not published' });
+    if (trend.media_type !== 'image' && !/^https:\/\//i.test(imageUrl)) {
+      return response.status(400).json({ ok: false, error: 'A public HTTPS image_url is required for this video preset' });
+    }
     if (!/^https:\/\//i.test(trend.video_url || '') && trend.media_type !== 'image') {
       return response.status(400).json({ ok: false, error: 'Preset has no public reference media' });
     }
@@ -157,7 +163,13 @@ module.exports = async function handler(request, response) {
     const providerJobId = provider.data.request_id || provider.data.id || provider.data.job_id || null;
     await supabase(`generations?id=eq.${encodeURIComponent(generationId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status: 'succeeded', provider_job_id: providerJobId, output_video_url: provider.data.video?.url || provider.data.output || null, completed_at: new Date().toISOString() })
+      body: JSON.stringify({
+        status: 'succeeded',
+        provider_job_id: providerJobId,
+        output_video_url: trend.media_type === 'image' ? null : (provider.data.video?.url || provider.data.output || null),
+        output_image_url: trend.media_type === 'image' ? (provider.data.image?.url || provider.data.images?.[0]?.url || provider.data.output || null) : null,
+        completed_at: new Date().toISOString()
+      })
     });
     await supabase('rpc/capture_credits', {
       method: 'POST',
